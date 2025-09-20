@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Scheduling;
 use App\Http\Requests\UpdateSchedulingRequest;
+use App\Models\User;
+use App\Models\UserType;
+use App\Notifications\NewSchedulingNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -48,8 +51,16 @@ class SchedulingController extends Controller
             'end_date'   => $request->end_date,
         ]);
 
+        $adminUserType = UserType::where('name', 'admin')->first();
+        $admins = User::where('user_type_id', $adminUserType->id)->get();
+
+        foreach ($admins as $admin) {
+            $admin->notify(new NewSchedulingNotification($scheduling));
+        }
+
         return response()->json($scheduling, 201);
     }
+
 
     public function show(Request $request, $id)
     {
@@ -67,14 +78,7 @@ class SchedulingController extends Controller
 
     public function update(UpdateSchedulingRequest $request, $id)
     {
-        $user = $request->user();
-        $client = $user->client;
-
-        if (!$client) {
-            return response()->json(['message' => 'Cliente não encontrado para o usuário'], 404);
-        }
-
-        $scheduling = Scheduling::where('client_id', $client->id)->findOrFail($id);
+        $scheduling = Scheduling::findOrFail($id);
 
         $request->validate([
             'start_date' => 'required|date',
@@ -91,16 +95,10 @@ class SchedulingController extends Controller
 
     public function destroy(Request $request, $id)
     {
-        $user = $request->user();
-        $client = $user->client;
-
-        if (!$client) {
-            return response()->json(['message' => 'Cliente não encontrado para o usuário'], 404);
-        }
-
-        $scheduling = Scheduling::where('client_id', $client->id)->findOrFail($id);
+        $scheduling = Scheduling::findOrFail($id);
         $scheduling->delete();
 
         return response()->json(['message' => 'Agendamento removido']);
     }
+
 }

@@ -11,13 +11,19 @@ class Scheduling extends Model
     use HasFactory;
 
     protected $fillable = [
-        'client_id',
+         'client_id',
         'start_date',
         'end_date',
+        'admin_id',
     ];
 
     public function client(): BelongsTo
     {
         return $this->belongsTo(Client::class);
+    }
+
+    public function admin(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'admin_id');
     }
 }
