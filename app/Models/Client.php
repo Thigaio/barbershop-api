@@ -23,7 +23,7 @@ class Client extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function scheduling(): HasMany
+    public function schedulings(): HasMany
     {
         return $this->hasMany(Scheduling::class);
     }

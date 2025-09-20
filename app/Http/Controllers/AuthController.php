@@ -4,74 +4,67 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
-    // Registro apenas para clientes
     public function register(Request $request)
     {
-        $request->validate([
-            'name'     => 'required|string|max:255',
-            'email'    => 'required|string|email|unique:users',
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|unique:users',
             'password' => 'required|string|min:6|confirmed',
+            'phone' => 'required|string',
+            'address' => 'required|string',
+            'city' => 'required|string',
         ]);
 
-        $user = User::create([
-            'name'         => $request->name,
-            'email'        => $request->email,
-            'password'     => Hash::make($request->password),
-            'user_type_id' => 2, // client
+        $user = new User([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
+            'user_type_id' => 2,
         ]);
+
+        DB::transaction(function () use (&$user, $validated) {
+            $user->save(); 
+
+            $user->client()->create([
+                'phone' => $validated['phone'],
+                'address' => $validated['address'],
+                'city' => $validated['city'],
+            ]);
+        });
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
-            'message' => 'Cliente registrado com sucesso!',
-            'token'   => $token,
-            'user'    => $user,
+            'access_token' => $token,
+            'token_type' => 'Bearer',
+            'user' => $user,
         ], 201);
     }
 
-    // Login apenas para admin
     public function login(Request $request)
     {
-        $request->validate([
-            'email'    => 'required|email',
-            'password' => 'required|string',
+        $credentials = $request->validate([
+            'email' => ['required', 'email'],
+            'password' => ['required'],
         ]);
 
-        $user = User::where('email', $request->email)->first();
+        $user = User::where('email', $credentials['email'])->first();
 
-        if (! $user || ! Hash::check($request->password, $user->password)) {
-            throw ValidationException::withMessages([
-                'email' => ['As credenciais estão incorretas.'],
-            ]);
-        }
-
-        if ($user->user_type_id !== 1) { // 1 = admin
-            return response()->json([
-                'message' => 'Apenas administradores podem fazer login aqui.',
-            ], 403);
+        if (!$user || !Hash::check($credentials['password'], $user->password)) {
+            return response()->json(['message' => 'Credenciais inválidas'], 401);
         }
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
-            'message' => 'Login efetuado com sucesso!',
-            'token'   => $token,
-            'user'    => $user,
-        ]);
-    }
-
-    // Logout (precisa estar autenticado)
-    public function logout(Request $request)
-    {
-        $request->user()->tokens()->delete();
-
-        return response()->json([
-            'message' => 'Logout realizado com sucesso!'
+            'access_token' => $token,
+            'token_type' => 'Bearer',
+            'user' => $user,
         ]);
     }
 }
