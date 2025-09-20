@@ -7,8 +7,36 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
+/**
+ * @OA\Tag(
+ *     name="Auth",
+ *     description="Autenticação e registro"
+ * )
+ */
 class AuthController extends Controller
 {
+    /**
+     * @OA\Post(
+     *     path="/api/register",
+     *     summary="Registra um novo usuário (cliente)",
+     *     tags={"Auth"},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"name","email","password","password_confirmation","phone","address","city"},
+     *             @OA\Property(property="name", type="string", example="João Silva"),
+     *             @OA\Property(property="email", type="string", format="email", example="joao@example.com"),
+     *             @OA\Property(property="password", type="string", format="password", example="secret"),
+     *             @OA\Property(property="password_confirmation", type="string", format="password", example="secret"),
+     *             @OA\Property(property="phone", type="string", example="11999999999"),
+     *             @OA\Property(property="address", type="string", example="Rua A, 123"),
+     *             @OA\Property(property="city", type="string", example="São Paulo"),
+     *         ),
+     *     ),
+     *     @OA\Response(response=201, description="Usuário registrado"),
+     *     @OA\Response(response=422, description="Erro de validação")
+     * )
+     */
     public function register(Request $request)
     {
         $validated = $request->validate([
@@ -46,6 +74,23 @@ class AuthController extends Controller
         ], 201);
     }
 
+     /**
+     * @OA\Post(
+     *     path="/api/login",
+     *     summary="Login de usuário",
+     *     tags={"Auth"},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"email","password"},
+     *             @OA\Property(property="email", type="string", format="email", example="joao@example.com"),
+     *             @OA\Property(property="password", type="string", format="password", example="secret"),
+     *         ),
+     *     ),
+     *     @OA\Response(response=200, description="Login realizado"),
+     *     @OA\Response(response=401, description="Credenciais inválidas")
+     * )
+     */
     public function login(Request $request)
     {
         $credentials = $request->validate([
