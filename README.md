@@ -131,6 +131,7 @@ php artisan queue:listen
 ### Autenticação
 
 * `POST /api/register` – Registro de cliente
+* `POST /api/admin` - Registro de admin
 * `POST /api/login` – Login (cliente/admin)
 
 ---
